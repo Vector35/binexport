@@ -98,39 +98,47 @@ find_package(Protobuf 3.14 REQUIRED) # Make protobuf_generate_cpp available
 
 # Binary Ninja API
 if(BINEXPORT_ENABLE_BINARYNINJA)
-  if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
-    set(_binexport_binaryninjacore_suffix "_stable")
-    set(_binexport_binaryninja_git_tag
-        "13a6e9ab06a3384b8c6ea6c2a0654d97482b369f") # 2025-05-21 v5.0.7486-stable
-  else()
-    set(_binexport_binaryninjacore_suffix "")
-    set(_binexport_binaryninja_git_tag
-        "8ba8388e12ab32ad937c4514f7a907d2530f1ef8") # 2025-05-31
-  endif()
-  FetchContent_Declare(binaryninjaapi
-    GIT_REPOSITORY https://github.com/Vector35/binaryninja-api.git
-    GIT_TAG        ${_binexport_binaryninja_git_tag}
-  )
-  set(CORE_LIBRARY binaryninjacore)
-  set(BN_CORE_LIBRARY "${CORE_LIBRARY}")
-  set(HEADLESS TRUE)
-  FetchContent_MakeAvailable(binaryninjaapi)
-  add_library(binaryninjacore SHARED
-    binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
-  )
-  set_target_properties(binaryninjacore PROPERTIES
-    SOVERSION 1
-  )
-  target_include_directories(binaryninjacore PRIVATE
-    "${binaryninjaapi_SOURCE_DIR}"
-  )
-  if(MSVC)
-    target_compile_options(binaryninjaapi PRIVATE
-      /wd4005  # macro redefinition (NOMINMAX, _CRT_SECURE_NO_WARNINGS)
+  # First check if we can find Binary Ninja using our custom module
+  find_package(BinaryNinja QUIET)
+  
+  if(NOT BinaryNinja_FOUND)
+    # Fall back to fetching Binary Ninja API
+    if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
+      set(_binexport_binaryninjacore_suffix "_stable")
+      set(_binexport_binaryninja_git_tag
+          "13a6e9ab06a3384b8c6ea6c2a0654d97482b369f") # 2025-05-21 v5.0.7486-stable
+    else()
+      set(_binexport_binaryninjacore_suffix "")
+      set(_binexport_binaryninja_git_tag
+          "8ba8388e12ab32ad937c4514f7a907d2530f1ef8") # 2025-05-31
+    endif()
+    FetchContent_Declare(binaryninjaapi
+      GIT_REPOSITORY https://github.com/Vector35/binaryninja-api.git
+      GIT_TAG        ${_binexport_binaryninja_git_tag}
     )
+    set(CORE_LIBRARY binaryninjacore)
+    set(BN_CORE_LIBRARY "${CORE_LIBRARY}")
+    set(HEADLESS TRUE)
+    FetchContent_MakeAvailable(binaryninjaapi)
+    add_library(binaryninjacore SHARED
+      binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
+    )
+    set_target_properties(binaryninjacore PROPERTIES
+      SOVERSION 1
+    )
+    target_include_directories(binaryninjacore PRIVATE
+      "${binaryninjaapi_SOURCE_DIR}"
+    )
+    if(MSVC)
+      target_compile_options(binaryninjaapi PRIVATE
+        /wd4005  # macro redefinition (NOMINMAX, _CRT_SECURE_NO_WARNINGS)
+      )
+    endif()
+    binexport_check_target(binaryninjaapi)
+    if(NOT TARGET BinaryNinja::API)
+      add_library(BinaryNinja::API ALIAS binaryninjaapi)
+    endif()
   endif()
-  binexport_check_target(binaryninjaapi)
-  add_library(BinaryNinja::API ALIAS binaryninjaapi)
 endif()
 
 # Boost
