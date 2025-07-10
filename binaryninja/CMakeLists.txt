@@ -30,7 +30,21 @@ target_link_libraries(${binexport_bn_plugin_name} PRIVATE
 set_target_properties(${binexport_bn_plugin_name} PROPERTIES
   PREFIX ""
 )
-install(TARGETS ${binexport_bn_plugin_name}
-        ARCHIVE DESTINATION binexport-prefix
-        RUNTIME DESTINATION binexport-prefix
-        LIBRARY DESTINATION binexport-prefix)
+
+if(BN_INTERNAL_BUILD)
+  # When building as part of Binary Ninja, output to the correct plugin directory
+  set_target_properties(${binexport_bn_plugin_name} PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${BN_CORE_PLUGIN_DIR}
+    RUNTIME_OUTPUT_DIRECTORY ${BN_CORE_PLUGIN_DIR}
+  )
+  if(APPLE)
+    ui_plugin_rpath(${binexport_bn_plugin_name})
+  elseif(UNIX)
+    ui_plugin_rpath(${binexport_bn_plugin_name})
+  endif()
+else()
+  install(TARGETS ${binexport_bn_plugin_name}
+          ARCHIVE DESTINATION binexport-prefix
+          RUNTIME DESTINATION binexport-prefix
+          LIBRARY DESTINATION binexport-prefix)
+endif()

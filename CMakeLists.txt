@@ -13,9 +13,7 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.20)
-
 cmake_policy(VERSION 3.20..4.0)
-
 project(binexport VERSION 12)  # Only major version is used
 
 # BinExport settings
@@ -47,7 +45,7 @@ create_directory_symlink(
   "${BINEXPORT_BINARY_DIR}/src_include/third_party/absl"
 )
 create_directory_symlink(
-  "${absl_SOURCE_DIR}/binaryninja/stubs"
+  "${binaryninja_SOURCE_DIR}/binaryninja/stubs"
   "${BINEXPORT_BINARY_DIR}/src_include/third_party/binaryninja_api"
 )
 create_directory_symlink(
