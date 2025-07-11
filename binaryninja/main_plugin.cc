@@ -538,8 +538,24 @@ absl::Status ExportBinary(const std::string& filename,
 }
 
 void Plugin::Run(BinaryNinja::BinaryView* view) {
-  const std::string filename =
+  std::string filename =
       ReplaceFileExtension(view->GetFile()->GetFilename(), ".BinExport");
+  
+  // If UI is enabled, show file dialog for choosing output filename
+  if (BNIsUIEnabled()) {
+    char* selected_filename = nullptr;
+    if (BNGetSaveFileNameInput(&selected_filename, "Save BinExport File", 
+                               "BinExport Files (*.BinExport)", filename.c_str())) {
+      if (selected_filename) {
+        filename = selected_filename;
+        BNFreeString(selected_filename);
+      }
+    } else {
+      // User cancelled the dialog
+      return;
+    }
+  }
+  
   if (auto status = ExportBinary(filename, view); !status.ok()) {
     LOG(ERROR) << "Error exporting: " << std::string(status.message());
   }
