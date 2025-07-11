@@ -38,8 +38,15 @@
 #include "third_party/zynamics/binexport/util/timer.h"
 #include "third_party/zynamics/binexport/version.h"
 
-#include <sys/stat.h>
+#ifdef _WIN32
+#include <io.h>
+#define access _access
+#define W_OK 2
+#else
 #include <unistd.h>
+#endif
+
+#include <sys/stat.h>
 
 namespace security::binexport {
 
@@ -57,7 +64,7 @@ bool IsDirectoryWritable(const std::string& filepath) {
     return false;  // Directory doesn't exist
   }
   
-  // Check write permission (consider effective user ID)
+  // Check write permission
   if (access(dir_path.c_str(), W_OK) != 0) {
     return false;  // No write permission
   }
