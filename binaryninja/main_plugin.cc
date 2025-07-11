@@ -38,7 +38,32 @@
 #include "third_party/zynamics/binexport/util/timer.h"
 #include "third_party/zynamics/binexport/version.h"
 
+#include <sys/stat.h>
+#include <unistd.h>
+
 namespace security::binexport {
+
+// Check if we can write to the directory containing the given path
+bool IsDirectoryWritable(const std::string& filepath) {
+  // Get directory path
+  std::string dir_path = Dirname(filepath);
+  if (dir_path.empty()) {
+    dir_path = ".";
+  }
+  
+  // Check if directory exists and is writable
+  struct stat st;
+  if (stat(dir_path.c_str(), &st) != 0) {
+    return false;  // Directory doesn't exist
+  }
+  
+  // Check write permission (consider effective user ID)
+  if (access(dir_path.c_str(), W_OK) != 0) {
+    return false;  // No write permission
+  }
+  
+  return true;
+}
 
 absl::StatusOr<std::string> GetInputFileSha256(BinaryNinja::BinaryView* view) {
   auto transform = BinaryNinja::Transform::GetByName("SHA256");
@@ -554,6 +579,20 @@ void Plugin::Run(BinaryNinja::BinaryView* view) {
       // User cancelled the dialog
       return;
     }
+  }
+  
+  // Check if the directory is writable before attempting export
+  if (!IsDirectoryWritable(filename)) {
+    std::string error_msg = absl::StrFormat(
+        "Cannot write to directory: %s\nPlease choose a different location.",
+        Dirname(filename).c_str());
+    LOG(ERROR) << error_msg;
+    if (BNIsUIEnabled()) {
+      BNShowMessageBox("BinExport Error", error_msg.c_str(),
+                       BNMessageBoxButtonSet::OKButtonSet,
+                       BNMessageBoxIcon::ErrorIcon);
+    }
+    return;
   }
   
   if (auto status = ExportBinary(filename, view); !status.ok()) {
