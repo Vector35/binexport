@@ -595,8 +595,33 @@ void Plugin::Run(BinaryNinja::BinaryView* view) {
     return;
   }
   
+  // Show a modal dialog before starting export if UI is enabled
+  if (BNIsUIEnabled()) {
+    std::string info_msg = absl::StrFormat(
+        "Exporting to BinDiff format...\n\nOutput file: %s\n\n"
+        "This may take a while for large binaries. Binary Ninja will appear unresponsive during the export.",
+        filename.c_str());
+    BNShowMessageBox("BinExport", info_msg.c_str(),
+                     BNMessageBoxButtonSet::OKButtonSet,
+                     BNMessageBoxIcon::InformationIcon);
+  }
+  
+  // Run the export
   if (auto status = ExportBinary(filename, view); !status.ok()) {
     LOG(ERROR) << "Error exporting: " << std::string(status.message());
+    if (BNIsUIEnabled()) {
+      std::string error_msg = "Error exporting: " + std::string(status.message());
+      BNShowMessageBox("BinExport Error", error_msg.c_str(),
+                       BNMessageBoxButtonSet::OKButtonSet,
+                       BNMessageBoxIcon::ErrorIcon);
+    }
+  } else {
+    if (BNIsUIEnabled()) {
+      std::string success_msg = "Successfully exported to: " + filename;
+      BNShowMessageBox("BinExport Complete", success_msg.c_str(),
+                       BNMessageBoxButtonSet::OKButtonSet,
+                       BNMessageBoxIcon::InformationIcon);
+    }
   }
 }
 
