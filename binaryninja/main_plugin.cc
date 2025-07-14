@@ -642,8 +642,8 @@ bool Plugin::Init() {
     return false;
   }
 
-  LOG(INFO) << kBinExportName << " " << kBinExportDetailedVersion << ", "
-            << kBinExportCopyright;
+  VLOG(1) << kBinExportName << " " << kBinExportDetailedVersion << ", "
+          << kBinExportCopyright;
 
   BinaryNinja::PluginCommand::Register(
       kBinExportName, kDescription,

@@ -39,6 +39,11 @@ void BinaryNinjaLogSink::Send(const absl::LogEntry& entry) {
       level = ErrorLog;
       break;
   }
+  
+  if (entry.verbosity() > 0) {
+    level = DebugLog;
+  }
+  
   absl::string_view message = entry.text_message();
   BinaryNinja::Log(level, "%*s", static_cast<int>(message.size()),
                    message.data());
