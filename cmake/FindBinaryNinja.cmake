@@ -8,17 +8,22 @@ if(NOT BN_INSTALL_DIR)
     message(FATAL_ERROR "BN_INSTALL_DIR must be set")
 endif()
 
+# Allow custom API build directory to be specified
+if(NOT BN_API_BUILD_DIR)
+    set(BN_API_BUILD_DIR "${BN_API_PATH}/../build/api/out")
+endif()
+
 # Set up binaryninjaapi library
 if(NOT TARGET binaryninjaapi)
     add_library(binaryninjaapi STATIC IMPORTED GLOBAL)
     if(WIN32)
         set_target_properties(binaryninjaapi PROPERTIES
-            IMPORTED_LOCATION "${BN_API_PATH}/../build/api/out/binaryninjaapi.lib"
+            IMPORTED_LOCATION "${BN_API_BUILD_DIR}/binaryninjaapi.lib"
             INTERFACE_INCLUDE_DIRECTORIES "${BN_API_PATH};${BN_API_PATH}/vendor/fmt/include"
         )
     else()
         set_target_properties(binaryninjaapi PROPERTIES
-            IMPORTED_LOCATION "${BN_API_PATH}/../build/api/out/libbinaryninjaapi.a"
+            IMPORTED_LOCATION "${BN_API_BUILD_DIR}/libbinaryninjaapi.a"
             INTERFACE_INCLUDE_DIRECTORIES "${BN_API_PATH};${BN_API_PATH}/vendor/fmt/include"
         )
     endif()
@@ -60,11 +65,11 @@ if(NOT TARGET fmt::fmt)
     add_library(fmt STATIC IMPORTED GLOBAL)
     if(WIN32)
         set_target_properties(fmt PROPERTIES
-            IMPORTED_LOCATION "${BN_API_PATH}/../build/api/vendor/fmt/fmt.lib"
+            IMPORTED_LOCATION "${BN_API_BUILD_DIR}/../vendor/fmt/fmt.lib"
         )
     else()
         set_target_properties(fmt PROPERTIES
-            IMPORTED_LOCATION "${BN_API_PATH}/../build/api/vendor/fmt/libfmt.a"
+            IMPORTED_LOCATION "${BN_API_BUILD_DIR}/../vendor/fmt/libfmt.a"
         )
     endif()
     add_library(fmt::fmt ALIAS fmt)
