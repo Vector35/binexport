@@ -46,7 +46,6 @@
 #include <unistd.h>
 #endif
 
-#include <sys/stat.h>
 
 namespace security::binexport {
 
@@ -59,8 +58,7 @@ bool IsDirectoryWritable(const std::string& filepath) {
   }
   
   // Check if directory exists and is writable
-  struct stat st;
-  if (stat(dir_path.c_str(), &st) != 0) {
+  if (!IsDirectory(dir_path)) {
     return false;  // Directory doesn't exist
   }
   
