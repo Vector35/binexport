@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <string>
 
+#include "third_party/absl/cleanup/cleanup.h"
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/status/statusor.h"
@@ -574,11 +575,15 @@ void Plugin::Run(BinaryNinja::BinaryView* view) {
   // If UI is enabled, show file dialog for choosing output filename
   if (BNIsUIEnabled()) {
     char* selected_filename = nullptr;
+    absl::Cleanup cleanup = [selected_filename] {
+      if (selected_filename) {
+        BNFreeString(selected_filename);
+      }
+    };
     if (BNGetSaveFileNameInput(&selected_filename, "Save BinExport File", 
                                "BinExport Files (*.BinExport)", filename.c_str())) {
       if (selected_filename) {
         filename = selected_filename;
-        BNFreeString(selected_filename);
       }
     } else {
       // User cancelled the dialog
