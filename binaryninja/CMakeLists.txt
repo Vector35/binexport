@@ -28,6 +28,11 @@ target_link_libraries(${binexport_bn_plugin_name} PRIVATE
   BinaryNinja::API
   binexport_core
 )
+if(DEFINED BINEXPORT_BUILTIN_PLUGIN)
+  target_compile_definitions(${binexport_bn_plugin_name} PRIVATE
+    BINEXPORT_BUILTIN_PLUGIN=${BINEXPORT_BUILTIN_PLUGIN}
+  )
+endif()
 set_target_properties(${binexport_bn_plugin_name} PROPERTIES
   PREFIX ""
 )

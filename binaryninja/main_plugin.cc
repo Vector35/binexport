@@ -50,6 +50,14 @@
 
 namespace security::binexport {
 
+constexpr bool IsBuiltinPlugin() {
+#ifdef BINEXPORT_BUILTIN_PLUGIN
+  return BINEXPORT_BUILTIN_PLUGIN;
+#else
+  return false;
+#endif
+}
+
 // Check if we can write to the directory containing the given path
 bool IsDirectoryWritable(const std::string& filepath) {
   // Get directory path
@@ -392,7 +400,9 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
   });
   Instruction::SetMemoryFlags(&flags);
 
-  LOG(INFO) << "flow analysis";
+  if constexpr (!IsBuiltinPlugin()) {
+    LOG(INFO) << "flow analysis";
+  }
   for (EntryPointManager entry_point_manager(entry_points, "flow analysis");
        !entry_points->empty();) {
     const Address address = entry_points->back().address_;
@@ -450,15 +460,21 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
     instructions->push_back(new_instruction);
   }
 
-  LOG(INFO) << "sorting instructions";
+  if constexpr (!IsBuiltinPlugin()) {
+    LOG(INFO) << "sorting instructions";
+  }
   SortInstructions(instructions);
 
-  LOG(INFO) << "reconstructing flow graphs";
+  if constexpr (!IsBuiltinPlugin()) {
+    LOG(INFO) << "reconstructing flow graphs";
+  }
   std::sort(address_references.begin(), address_references.end());
   // TODO(cblichmann): Remove duplicates if any.
   ReconstructFlowGraph(instructions, *flow_graph, call_graph);
 
-  LOG(INFO) << "reconstructing functions";
+  if constexpr (!IsBuiltinPlugin()) {
+    LOG(INFO) << "reconstructing functions";
+  }
   flow_graph->ReconstructFunctions(instructions, call_graph,
                                    FlowGraph::NoReturnHeuristic::kNone);
 
@@ -470,7 +486,9 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
   // post processing must happen afterwards.
   call_graph->PostProcessComments();
 
-  LOG(INFO) << "Binary Ninja specific post processing";
+  if constexpr (!IsBuiltinPlugin()) {
+    LOG(INFO) << "Binary Ninja specific post processing";
+  }
   for (const auto& [address, function] : flow_graph->GetFunctions()) {
     // Find function name
     BinaryNinja::Ref<BinaryNinja::Symbol> bn_symbol =
@@ -500,7 +518,9 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
   const auto processing_time = absl::Seconds(timer.elapsed());
   timer.restart();
 
-  LOG(INFO) << "writing...";
+  if constexpr (!IsBuiltinPlugin()) {
+    LOG(INFO) << "writing...";
+  }
   writer
       ->Write(*call_graph, *flow_graph, *instructions, address_references,
               address_space)
@@ -518,7 +538,9 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
 
 absl::Status ExportBinaryView(BinaryNinja::BinaryView* view, Writer* writer) {
   const std::string filename = view->GetFile()->GetOriginalFilename();
-  LOG(INFO) << filename << ": starting export";
+  if constexpr (!IsBuiltinPlugin()) {
+    LOG(INFO) << filename << ": starting export";
+  }
   Timer<> timer;
   EntryPoints entry_points;
 
