@@ -28,6 +28,20 @@ target_link_libraries(${binexport_bn_plugin_name} PRIVATE
   BinaryNinja::API
   binexport_core
 )
+if(WIN32)
+  target_link_libraries(${binexport_bn_plugin_name} PRIVATE
+    crypt32.lib
+    delayimp.lib  # Helper for /DELAYLOAD
+    secur32.lib
+    shlwapi.lib
+    ws2_32.lib
+    wldap32.lib
+  )
+  # See b/206656063 for context
+  set_target_properties(${binexport_bn_plugin_name} PROPERTIES
+    LINK_FLAGS /DELAYLOAD:dbghelp.dll
+  )
+endif()
 if(DEFINED BINEXPORT_BUILTIN_PLUGIN)
   target_compile_definitions(${binexport_bn_plugin_name} PRIVATE
     BINEXPORT_BUILTIN_PLUGIN=${BINEXPORT_BUILTIN_PLUGIN}
