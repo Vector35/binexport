@@ -41,6 +41,7 @@ class Plugin {
 
   bool Init();
   void Run(BinaryNinja::BinaryView* view);
+  void RunQuick(BinaryNinja::BinaryView* view);
 
   bool alsologtostderr() const { return alsologtostderr_; }
 

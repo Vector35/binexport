@@ -657,6 +657,34 @@ void Plugin::Run(BinaryNinja::BinaryView* view) {
   }
 }
 
+void Plugin::RunQuick(BinaryNinja::BinaryView* view) {
+  std::string filename =
+      ReplaceFileExtension(view->GetFile()->GetFilename(), ".BinExport");
+
+  if (!IsDirectoryWritable(filename)) {
+    std::string error_msg = absl::StrFormat(
+        "Cannot write to directory: %s",
+        Dirname(filename).c_str());
+    LOG(ERROR) << error_msg;
+    if (BNIsUIEnabled()) {
+      BNShowMessageBox("BinExport Error", error_msg.c_str(),
+                       BNMessageBoxButtonSet::OKButtonSet,
+                       BNMessageBoxIcon::ErrorIcon);
+    }
+    return;
+  }
+
+  if (auto status = ExportBinary(filename, view); !status.ok()) {
+    LOG(ERROR) << "Error exporting: " << std::string(status.message());
+    if (BNIsUIEnabled()) {
+      std::string error_msg = "Error exporting: " + std::string(status.message());
+      BNShowMessageBox("BinExport Error", error_msg.c_str(),
+                       BNMessageBoxButtonSet::OKButtonSet,
+                       BNMessageBoxIcon::ErrorIcon);
+    }
+  }
+}
+
 bool Plugin::Init() {
   if (auto status =
           InitLogging(LoggingOptions{}, std::make_unique<BinaryNinjaLogSink>());
@@ -673,6 +701,10 @@ bool Plugin::Init() {
   BinaryNinja::PluginCommand::Register(
       kBinExportName, kDescription,
       [](BinaryNinja::BinaryView* view) { Plugin::instance()->Run(view); });
+
+  BinaryNinja::PluginCommand::Register(
+      "BinExport (Quick)", "Export to BinDiff format without dialogs",
+      [](BinaryNinja::BinaryView* view) { Plugin::instance()->RunQuick(view); });
 
   return true;
 }
