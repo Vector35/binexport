@@ -49,33 +49,38 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
 endif()
 
 # Abseil
-FetchContent_Declare(absl
-  URL https://github.com/abseil/abseil-cpp/archive/23d40c5dbdef4ffb8d53860ff9e6d81c57476eab.zip  # 2025-06-17
-  URL_HASH SHA256=9eec3d540a7acb537ad91e48cb98bf25f29486becb1872e4301f4e3da3cd6c19
-)
-set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
-set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
-set(ABSL_USE_EXTERNAL_GOOGLETEST ON CACHE BOOL "" FORCE)
-if(MSVC)
-  # Link MSVCRT statically for abseil unless overridden
-  if(CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "DLL")
-    set(ABSL_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
-  else()
-    set(ABSL_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
+if(TARGET absl::core_headers)
+  message(STATUS "BinExport: reusing existing Abseil targets")
+else()
+  FetchContent_Declare(absl
+    URL https://github.com/abseil/abseil-cpp/archive/23d40c5dbdef4ffb8d53860ff9e6d81c57476eab.zip  # 2025-06-17
+    URL_HASH SHA256=9eec3d540a7acb537ad91e48cb98bf25f29486becb1872e4301f4e3da3cd6c19
+  )
+  set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
+  set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
+  set(ABSL_USE_EXTERNAL_GOOGLETEST ON CACHE BOOL "" FORCE)
+  if(MSVC)
+    # Link MSVCRT statically for abseil unless overridden
+    if(CMAKE_MSVC_RUNTIME_LIBRARY MATCHES "DLL")
+      set(ABSL_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
+    else()
+      set(ABSL_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
+    endif()
   endif()
+  if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
+    # Make absl::status_matchers available
+    set(ABSL_BUILD_TESTING ON CACHE BOOL "" FORCE)
+    set(absl_gtest_src_dir "${googletest_SOURCE_DIR}" CACHE STRING "" FORCE)
+  endif()
+  FetchContent_MakeAvailable(absl)
 endif()
-if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
-  # Make absl::status_matchers available
-  set(ABSL_BUILD_TESTING ON CACHE BOOL "" FORCE)
-  set(absl_gtest_src_dir "${googletest_SOURCE_DIR}" CACHE STRING "" FORCE)
-endif()
-FetchContent_MakeAvailable(absl)
 binexport_check_target(absl::core_headers)
 
 # Protocol Buffers
 FetchContent_Declare(protobuf
   URL https://github.com/protocolbuffers/protobuf/archive/refs/tags/v31.0.tar.gz # 2025-05-14
   URL_HASH SHA256=2b695cb1eaef8e173f884235ee6d55f57186e95d89ebb31361ee55cb5fd1b996
+  DOWNLOAD_EXTRACT_TIMESTAMP 1
 )
 set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
