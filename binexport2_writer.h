@@ -17,6 +17,8 @@
 
 #include "third_party/zynamics/binexport/writer.h"
 
+#include <filesystem>
+
 class BinExport2;
 
 namespace security::binexport {
@@ -25,7 +27,7 @@ class BinExport2Writer : public Writer {
  public:
   // Note: This writer expects executable_hash to be hex encoded, not the raw
   //       bytes of the digest.
-  BinExport2Writer(const std::string& result_filename,
+  BinExport2Writer(const std::filesystem::path& result_filename,
                    const std::string& executable_filename,
                    const std::string& executable_hash,
                    const std::string& architecture);
@@ -44,7 +46,7 @@ class BinExport2Writer : public Writer {
                             BinExport2* proto) const;
 
  private:
-  std::string filename_;
+  std::filesystem::path filename_;
   std::string executable_filename_;
   std::string executable_hash_;
   std::string architecture_;

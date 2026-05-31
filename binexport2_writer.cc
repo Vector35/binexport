@@ -32,6 +32,7 @@
 #include <array>    // IWYU pragma: keep
 #include <codecvt>  // IWYU pragma: keep
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <locale>  // IWYU pragma: keep
@@ -785,21 +786,31 @@ void WriteSections(const AddressSpace& address_space, BinExport2* proto) {
   }
 }
 
+std::string PathForDisplay(const std::filesystem::path& filename) {
+  auto value = filename.u8string();
+  return std::string(reinterpret_cast<const char*>(value.data()), value.size());
+}
+
 // Writes a binary protocol buffer to the specified filename.
-absl::Status WriteProtoToFile(const std::string& filename, BinExport2* proto) {
+absl::Status WriteProtoToFile(const std::filesystem::path& filename,
+                              BinExport2* proto) {
   std::ofstream stream(filename, std::ios::binary | std::ios::out);
   if (!stream.is_open() || stream.fail()) {
+    const std::string display_filename = PathForDisplay(filename);
     return absl::PermissionDeniedError(
-        absl::StrCat("Cannot write to file: '", filename, "' - check permissions"));
+        absl::StrCat("Cannot write to file: '", display_filename,
+                     "' - check permissions"));
   }
   if (!proto->SerializeToOstream(&stream)) {
+    const std::string display_filename = PathForDisplay(filename);
     return absl::UnknownError(
-        absl::StrCat("error serializing data to: '", filename, ""));
+        absl::StrCat("error serializing data to: '", display_filename, ""));
   }
   // Check if write was successful
   if (stream.fail()) {
+    const std::string display_filename = PathForDisplay(filename);
     return absl::DataLossError(
-        absl::StrCat("Failed to write data to: '", filename, "'"));
+        absl::StrCat("Failed to write data to: '", display_filename, "'"));
   }
   return absl::OkStatus();
 }
@@ -829,7 +840,7 @@ void WriteMDIndexExtension(const CallGraph&, const FlowGraph& flow_graph,
 
 }  // namespace
 
-BinExport2Writer::BinExport2Writer(const std::string& result_filename,
+BinExport2Writer::BinExport2Writer(const std::filesystem::path& result_filename,
                                    const std::string& executable_filename,
                                    const std::string& executable_hash,
                                    const std::string& architecture)
@@ -878,7 +889,7 @@ absl::Status BinExport2Writer::Write(
     const Instructions& instructions,
     const AddressReferences& address_references,
     const AddressSpace& address_space) {
-  LOG(INFO) << "Writing to: \"" << filename_ << "\".";
+  LOG(INFO) << "Writing to: \"" << PathForDisplay(filename_) << "\".";
 
   BinExport2 proto;
   NA_RETURN_IF_ERROR(WriteToProto(call_graph, flow_graph, instructions,

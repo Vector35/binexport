@@ -15,6 +15,7 @@
 #include "third_party/zynamics/binexport/binaryninja/main_plugin.h"
 
 #include <cstdint>
+#include <filesystem>
 #include <string>
 
 #include "third_party/absl/cleanup/cleanup.h"
@@ -41,7 +42,6 @@
 
 #ifdef _WIN32
 #include <io.h>
-#define access _access
 #define W_OK 2
 #else
 #include <unistd.h>
@@ -49,6 +49,51 @@
 
 
 namespace security::binexport {
+
+std::string PathToUtf8String(const std::filesystem::path& path) {
+  auto value = path.u8string();
+  return std::string(reinterpret_cast<const char*>(value.data()), value.size());
+}
+
+std::filesystem::path Utf8ToPath(const std::string& path) {
+#ifdef _WIN32
+  std::u8string utf8_path;
+  utf8_path.reserve(path.size());
+  for (char ch : path) {
+    utf8_path.push_back(static_cast<char8_t>(static_cast<unsigned char>(ch)));
+  }
+  return std::filesystem::path(utf8_path);
+#else
+  return std::filesystem::path(path);
+#endif
+}
+
+BNPath* PathToCore(const std::filesystem::path& path) {
+  const auto& native = path.native();
+  return BNCreatePath(native.data(), native.size());
+}
+
+std::filesystem::path PathFromCore(BNPath* path) {
+  if (!path) {
+    return {};
+  }
+
+  size_t size = 0;
+  const void* data = BNGetPathData(path, &size);
+  if (!data) {
+    return {};
+  }
+
+#ifdef _WIN32
+  return std::filesystem::path(
+      std::wstring(static_cast<const wchar_t*>(data),
+                   static_cast<const wchar_t*>(data) + size));
+#else
+  return std::filesystem::path(
+      std::string(static_cast<const char*>(data),
+                  static_cast<const char*>(data) + size));
+#endif
+}
 
 constexpr bool IsBuiltinPlugin() {
 #ifdef BINEXPORT_BUILTIN_PLUGIN
@@ -58,24 +103,32 @@ constexpr bool IsBuiltinPlugin() {
 #endif
 }
 
-// Check if we can write to the directory containing the given path
-bool IsDirectoryWritable(const std::string& filepath) {
-  // Get directory path
-  std::string dir_path = Dirname(filepath);
+std::string PathForDisplay(const std::filesystem::path& path) {
+  return PathToUtf8String(path);
+}
+
+// Check if we can write to the directory containing the given path.
+bool IsDirectoryWritable(const std::filesystem::path& filepath) {
+  std::filesystem::path dir_path = filepath.parent_path();
   if (dir_path.empty()) {
     dir_path = ".";
   }
-  
-  // Check if directory exists and is writable
-  if (!IsDirectory(dir_path)) {
-    return false;  // Directory doesn't exist
+
+  std::error_code ec;
+  if (!std::filesystem::is_directory(dir_path, ec)) {
+    return false;
   }
-  
-  // Check write permission
+
+#ifdef _WIN32
+  if (_waccess(dir_path.c_str(), W_OK) != 0) {
+    return false;
+  }
+#else
   if (access(dir_path.c_str(), W_OK) != 0) {
-    return false;  // No write permission
+    return false;
   }
-  
+#endif
+
   return true;
 }
 
@@ -530,14 +583,15 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
   Expression::EmptyCache();
 
   const auto writing_time = absl::Seconds(timer.elapsed());
-  LOG(INFO) << absl::StrCat(view->GetFile()->GetOriginalFilename(), ": ",
-                            HumanReadableDuration(processing_time),
-                            " processing, ",
-                            HumanReadableDuration(writing_time), " writing");
+  LOG(INFO) << absl::StrCat(
+      PathForDisplay(view->GetFile()->GetOriginalFilename()), ": ",
+      HumanReadableDuration(processing_time), " processing, ",
+      HumanReadableDuration(writing_time), " writing");
 }
 
 absl::Status ExportBinaryView(BinaryNinja::BinaryView* view, Writer* writer) {
-  const std::string filename = view->GetFile()->GetOriginalFilename();
+  const std::string filename =
+      PathForDisplay(view->GetFile()->GetOriginalFilename());
   if constexpr (!IsBuiltinPlugin()) {
     LOG(INFO) << filename << ": starting export";
   }
@@ -580,32 +634,37 @@ absl::Status ExportBinaryView(BinaryNinja::BinaryView* view, Writer* writer) {
   return absl::OkStatus();
 }
 
-absl::Status ExportBinary(const std::string& filename,
+absl::Status ExportBinary(const std::filesystem::path& filename,
                           BinaryNinja::BinaryView* view) {
   NA_ASSIGN_OR_RETURN(std::string sha256_hash, GetInputFileSha256(view));
 
-  BinExport2Writer writer(filename, view->GetFile()->GetOriginalFilename(),
-                          sha256_hash, GetArchitectureName(view));
+  BinExport2Writer writer(
+      filename, PathToUtf8String(view->GetFile()->GetOriginalFilename()),
+      sha256_hash, GetArchitectureName(view));
   NA_RETURN_IF_ERROR(ExportBinaryView(view, &writer));
   return absl::OkStatus();
 }
 
 void Plugin::Run(BinaryNinja::BinaryView* view) {
-  std::string filename =
-      ReplaceFileExtension(view->GetFile()->GetFilename(), ".BinExport");
+  std::filesystem::path filename = view->GetFile()->GetFilename();
+  filename.replace_extension(".BinExport");
   
   // If UI is enabled, show file dialog for choosing output filename
   if (BNIsUIEnabled()) {
-    char* selected_filename = nullptr;
-    absl::Cleanup cleanup = [selected_filename] {
+    BNPath* selected_filename = nullptr;
+    BNPath* default_filename = PathToCore(filename);
+    absl::Cleanup cleanup = [&] {
       if (selected_filename) {
-        BNFreeString(selected_filename);
+        BNFreePath(selected_filename);
+      }
+      if (default_filename) {
+        BNFreePath(default_filename);
       }
     };
     if (BNGetSaveFileNameInput(&selected_filename, "Save BinExport File", 
-                               "BinExport Files (*.BinExport)", filename.c_str())) {
+                               "BinExport Files (*.BinExport)", default_filename)) {
       if (selected_filename) {
-        filename = selected_filename;
+        filename = PathFromCore(selected_filename);
       }
     } else {
       // User cancelled the dialog
@@ -615,9 +674,12 @@ void Plugin::Run(BinaryNinja::BinaryView* view) {
   
   // Check if the directory is writable before attempting export
   if (!IsDirectoryWritable(filename)) {
+    const std::filesystem::path dir_path =
+        filename.parent_path().empty() ? std::filesystem::path(".")
+                                       : filename.parent_path();
     std::string error_msg = absl::StrFormat(
         "Cannot write to directory: %s\nPlease choose a different location.",
-        Dirname(filename).c_str());
+        PathForDisplay(dir_path).c_str());
     LOG(ERROR) << error_msg;
     if (BNIsUIEnabled()) {
       BNShowMessageBox("BinExport Error", error_msg.c_str(),
@@ -632,7 +694,7 @@ void Plugin::Run(BinaryNinja::BinaryView* view) {
     std::string info_msg = absl::StrFormat(
         "Exporting to BinDiff format...\n\nOutput file: %s\n\n"
         "This may take a while for large binaries. Binary Ninja will appear unresponsive during the export.",
-        filename.c_str());
+        PathForDisplay(filename).c_str());
     BNShowMessageBox("BinExport", info_msg.c_str(),
                      BNMessageBoxButtonSet::OKButtonSet,
                      BNMessageBoxIcon::InformationIcon);
@@ -649,7 +711,8 @@ void Plugin::Run(BinaryNinja::BinaryView* view) {
     }
   } else {
     if (BNIsUIEnabled()) {
-      std::string success_msg = "Successfully exported to: " + filename;
+      std::string success_msg =
+          "Successfully exported to: " + PathForDisplay(filename);
       BNShowMessageBox("BinExport Complete", success_msg.c_str(),
                        BNMessageBoxButtonSet::OKButtonSet,
                        BNMessageBoxIcon::InformationIcon);
@@ -658,13 +721,16 @@ void Plugin::Run(BinaryNinja::BinaryView* view) {
 }
 
 void Plugin::RunQuick(BinaryNinja::BinaryView* view) {
-  std::string filename =
-      ReplaceFileExtension(view->GetFile()->GetFilename(), ".BinExport");
+  std::filesystem::path filename = view->GetFile()->GetFilename();
+  filename.replace_extension(".BinExport");
 
   if (!IsDirectoryWritable(filename)) {
+    const std::filesystem::path dir_path =
+        filename.parent_path().empty() ? std::filesystem::path(".")
+                                       : filename.parent_path();
     std::string error_msg = absl::StrFormat(
         "Cannot write to directory: %s",
-        Dirname(filename).c_str());
+        PathForDisplay(dir_path).c_str());
     LOG(ERROR) << error_msg;
     if (BNIsUIEnabled()) {
       BNShowMessageBox("BinExport Error", error_msg.c_str(),
