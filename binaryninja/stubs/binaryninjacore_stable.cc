@@ -1429,16 +1429,6 @@ BINARYNINJACOREAPI void BNFreeNameSpaceList(BNNameSpace* nameSpace,
 BINARYNINJACOREAPI BNNameSpace BNGetExternalNameSpace(void) { return {}; }
 BINARYNINJACOREAPI BNNameSpace BNGetInternalNameSpace(void) { return {}; }
 BINARYNINJACOREAPI void BNFreeNameSpace(BNNameSpace* name) {}
-BINARYNINJACOREAPI BNRegisterValueWithConfidence
-BNGetGlobalPointerValue(BNBinaryView* view) {
-  return {};
-}
-BINARYNINJACOREAPI bool BNUserGlobalPointerValueSet(BNBinaryView* view) {
-  return {};
-}
-BINARYNINJACOREAPI void BNClearUserGlobalPointerValue(BNBinaryView* view) {}
-BINARYNINJACOREAPI void BNSetUserGlobalPointerValue(
-    BNBinaryView* view, BNRegisterValueWithConfidence value) {}
 BINARYNINJACOREAPI bool BNStringifyUnicodeData(
     BNBinaryView* data, BNArchitecture* arch, const BNDataBuffer* buffer,
     bool allowShortStrings, char** string, BNStringType* type) {
@@ -2483,10 +2473,6 @@ BINARYNINJACOREAPI bool BNFunctionHasExplicitlyDefinedType(BNFunction* func) {
 }
 BINARYNINJACOREAPI BNDisassemblyTextLine* BNGetFunctionTypeTokens(
     BNFunction* func, BNDisassemblySettings* settings, size_t* count) {
-  return {};
-}
-BINARYNINJACOREAPI BNRegisterValueWithConfidence
-BNGetFunctionGlobalPointerValue(BNFunction* func) {
   return {};
 }
 BINARYNINJACOREAPI bool BNFunctionUsesIncomingGlobalPointer(BNFunction* func) {
@@ -7350,10 +7336,6 @@ BNGetHighIntegerReturnValueRegister(BNCallingConvention* cc) {
 }
 BINARYNINJACOREAPI uint32_t
 BNGetFloatReturnValueRegister(BNCallingConvention* cc) {
-  return {};
-}
-BINARYNINJACOREAPI uint32_t
-BNGetGlobalPointerRegister(BNCallingConvention* cc) {
   return {};
 }
 BINARYNINJACOREAPI uint32_t* BNGetImplicitlyDefinedRegisters(
