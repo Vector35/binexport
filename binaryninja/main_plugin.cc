@@ -489,6 +489,12 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
   if constexpr (!IsBuiltinPlugin()) {
     LOG(INFO) << "Binary Ninja specific post processing";
   }
+  BinaryNinja::Ref<BinaryNinja::Architecture> default_arch =
+      view->GetDefaultArchitecture();
+  const bool simplify_templates =
+      default_arch ? BinaryNinja::Settings::Instance()->Get<bool>(
+                         "analysis.types.templateSimplifier", view)
+                   : false;
   for (const auto& [address, function] : flow_graph->GetFunctions()) {
     // Find function name
     BinaryNinja::Ref<BinaryNinja::Symbol> bn_symbol =
@@ -497,8 +503,18 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
       continue;
     }
 
-    function->SetName(bn_symbol->GetRawName(),
-                      BNRustSimplifyStrToStr(bn_symbol->GetFullName().c_str()));
+    std::string full_name = bn_symbol->GetFullName();
+    if (default_arch) {
+      BinaryNinja::Ref<BinaryNinja::Type> demangled_type;
+      BinaryNinja::QualifiedName demangled_name;
+      if (BinaryNinja::DemangleGeneric(
+              default_arch, bn_symbol->GetRawName(), demangled_type,
+              demangled_name, view, simplify_templates)) {
+        full_name = demangled_name.GetString();
+      }
+    }
+
+    function->SetName(bn_symbol->GetRawName(), full_name);
 
     if (bn_symbol->GetType() == BNSymbolType::ImportedFunctionSymbol) {
       function->SetType(Function::TYPE_IMPORTED);
