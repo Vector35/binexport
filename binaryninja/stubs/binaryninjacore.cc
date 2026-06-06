@@ -8119,6 +8119,12 @@ BINARYNINJACOREAPI bool BNIsDemanglerMangledName(BNDemangler* demangler,
                                                  const char* name) {
   return {};
 }
+BINARYNINJACOREAPI bool BNDemanglerDemangleWithOptions(
+    BNDemangler* demangler, BNArchitecture* arch, const char* name,
+    BNType** outType, BNQualifiedName* outVarName, BNBinaryView* view,
+    bool simplify) {
+  return {};
+}
 BINARYNINJACOREAPI bool BNDemanglerDemangle(BNDemangler* demangler,
                                             BNArchitecture* arch,
                                             const char* name, BNType** outType,
@@ -8945,13 +8951,6 @@ BINARYNINJACOREAPI BNMemoryUsageInfo* BNGetMemoryUsageInfo(size_t* count) {
 BINARYNINJACOREAPI void BNFreeMemoryUsageInfo(BNMemoryUsageInfo* info,
                                               size_t count) {}
 BINARYNINJACOREAPI uint32_t BNGetAddressRenderedWidth(uint64_t addr) {
-  return {};
-}
-BINARYNINJACOREAPI BNQualifiedName BNRustSimplifyStrToFQN(const char* const,
-                                                          bool) {
-  return {};
-}
-BINARYNINJACOREAPI char* BNRustSimplifyStrToStr(const char* const) {
   return {};
 }
 BINARYNINJACOREAPI BNDebugInfoParser* BNRegisterDebugInfoParser(
