@@ -489,6 +489,8 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
   if constexpr (!IsBuiltinPlugin()) {
     LOG(INFO) << "Binary Ninja specific post processing";
   }
+  const BinaryNinja::DemanglerConfig demangle_config =
+      BinaryNinja::DemanglerConfig::ForBinaryView(view);
   for (const auto& [address, function] : flow_graph->GetFunctions()) {
     // Find function name
     BinaryNinja::Ref<BinaryNinja::Symbol> bn_symbol =
@@ -497,8 +499,13 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
       continue;
     }
 
-    function->SetName(bn_symbol->GetRawName(),
-                      BNRustSimplifyStrToStr(bn_symbol->GetFullName().c_str()));
+    const std::string raw_name = bn_symbol->GetRawName();
+    std::string demangled_name = bn_symbol->GetFullName();
+    if (auto demangled =
+            BinaryNinja::Demangler::DemangleAny(raw_name, demangle_config)) {
+      demangled_name = demangled->name.GetString();
+    }
+    function->SetName(raw_name, demangled_name);
 
     if (bn_symbol->GetType() == BNSymbolType::ImportedFunctionSymbol) {
       function->SetType(Function::TYPE_IMPORTED);

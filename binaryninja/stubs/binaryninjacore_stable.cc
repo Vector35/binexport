@@ -8073,11 +8073,13 @@ BINARYNINJACOREAPI void BNFreeDemanglerList(BNDemangler** demanglers) {}
 BINARYNINJACOREAPI BNDemangler* BNGetDemanglerByName(const char* name) {
   return {};
 }
-BINARYNINJACOREAPI char* BNGetDemanglerName(BNDemangler* demangler) {
+BINARYNINJACOREAPI char* BNGetDemanglerName(const BNDemangler* demangler) {
   return {};
 }
-BINARYNINJACOREAPI void BNPromoteDemangler(BNDemangler* demangler) {}
-BINARYNINJACOREAPI bool BNIsDemanglerMangledName(BNDemangler* demangler,
+BINARYNINJACOREAPI bool BNPromoteDemangler(const BNDemangler* demangler) {
+  return {};
+}
+BINARYNINJACOREAPI bool BNIsDemanglerMangledName(const BNDemangler* demangler,
                                                  const char* name) {
   return {};
 }
