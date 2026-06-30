@@ -8015,50 +8015,31 @@ BINARYNINJACOREAPI void BNAddGraphReportToCollection(
     BNFlowGraph* graph) {}
 BINARYNINJACOREAPI void BNUpdateReportFlowGraph(BNReportCollection* reports,
                                                 size_t i, BNFlowGraph* graph) {}
-BINARYNINJACOREAPI bool BNDemangleMS(BNArchitecture* arch,
-                                     const char* mangledName, BNType** outType,
-                                     char*** outVarName,
-                                     size_t* outVarNameElements,
-                                     const bool simplify) {
+BINARYNINJACOREAPI BNDemanglerConfig BNGetDefaultDemanglerConfig(void) {
   return {};
 }
-BINARYNINJACOREAPI bool BNDemangleMSWithOptions(
-    BNArchitecture* arch, const char* mangledName, BNType** outType,
-    char*** outVarName, size_t* outVarNameElements,
-    const BNBinaryView* const view) {
+BINARYNINJACOREAPI BNDemanglerConfig BNGetDemanglerConfigForPlatform(
+    BNPlatform* platform, bool simplifyTemplates) {
   return {};
 }
-BINARYNINJACOREAPI bool BNIsGNU3MangledString(const char* mangledName) {
+BINARYNINJACOREAPI BNDemanglerConfig BNGetDemanglerConfigForBinaryView(
+    BNBinaryView* view) {
   return {};
 }
-BINARYNINJACOREAPI bool BNDemangleGNU3(BNArchitecture* arch,
-                                       const char* mangledName,
-                                       BNType** outType, char*** outVarName,
-                                       size_t* outVarNameElements,
-                                       const bool simplify) {
+BINARYNINJACOREAPI bool BNDemangle(const char* name,
+                                   const BNDemanglerConfig* config,
+                                   BNDemanglerResult* result) {
   return {};
 }
-BINARYNINJACOREAPI bool BNDemangleGNU3WithOptions(
-    BNArchitecture* arch, const char* mangledName, BNType** outType,
-    char*** outVarName, size_t* outVarNameElements,
-    const BNBinaryView* const view) {
+BINARYNINJACOREAPI bool BNDemangleWithDemangler(
+    const BNDemangler* demangler, const char* name,
+    const BNDemanglerConfig* config,
+    BNDemanglerResult* result) {
   return {};
 }
-BINARYNINJACOREAPI void BNFreeDemangledName(char*** name, size_t nameElements) {
-}
-BINARYNINJACOREAPI bool BNDemangleLLVM(const char* mangledName,
-                                       char*** outVarName,
-                                       size_t* outVarNameElements,
-                                       const bool simplify) {
-  return {};
-}
-BINARYNINJACOREAPI bool BNDemangleLLVMWithOptions(
-    const char* mangledName, char*** outVarName, size_t* outVarNameElements,
-    const BNBinaryView* const view) {
-  return {};
-}
+BINARYNINJACOREAPI void BNFreeDemanglerResult(BNDemanglerResult* result) {}
 BINARYNINJACOREAPI BNDemangler* BNRegisterDemangler(
-    const char* name, BNDemanglerCallbacks* callbacks) {
+    const char* name, const BNDemanglerCallbacks* callbacks) {
   return {};
 }
 BINARYNINJACOREAPI BNDemangler** BNGetDemanglerList(size_t* count) {
@@ -8068,31 +8049,17 @@ BINARYNINJACOREAPI void BNFreeDemanglerList(BNDemangler** demanglers) {}
 BINARYNINJACOREAPI BNDemangler* BNGetDemanglerByName(const char* name) {
   return {};
 }
-BINARYNINJACOREAPI char* BNGetDemanglerName(BNDemangler* demangler) {
+BINARYNINJACOREAPI BNDemangler* BNGetMSVCDemangler(void) { return {}; }
+BINARYNINJACOREAPI BNDemangler* BNGetGNU3Demangler(void) { return {}; }
+BINARYNINJACOREAPI BNDemangler* BNGetLLVMDemangler(void) { return {}; }
+BINARYNINJACOREAPI char* BNGetDemanglerName(const BNDemangler* demangler) {
   return {};
 }
-BINARYNINJACOREAPI void BNPromoteDemangler(BNDemangler* demangler) {}
-BINARYNINJACOREAPI bool BNIsDemanglerMangledName(BNDemangler* demangler,
-                                                 const char* name) {
+BINARYNINJACOREAPI bool BNPromoteDemangler(const BNDemangler* demangler) {
   return {};
 }
-BINARYNINJACOREAPI bool BNDemanglerDemangleWithOptions(
-    BNDemangler* demangler, BNArchitecture* arch, const char* name,
-    BNType** outType, BNQualifiedName* outVarName, BNBinaryView* view,
-    bool simplify) {
-  return {};
-}
-BINARYNINJACOREAPI bool BNDemanglerDemangle(BNDemangler* demangler,
-                                            BNArchitecture* arch,
-                                            const char* name, BNType** outType,
-                                            BNQualifiedName* outVarName,
-                                            BNBinaryView* view) {
-  return {};
-}
-BINARYNINJACOREAPI bool BNDemangleGeneric(BNArchitecture* arch,
-                                          const char* name, BNType** outType,
-                                          BNQualifiedName* outVarName,
-                                          BNBinaryView* view, bool simplify) {
+BINARYNINJACOREAPI bool BNIsDemanglerMangledName(const BNDemangler* demangler,
+                                                   const char* name) {
   return {};
 }
 BINARYNINJACOREAPI char** BNPluginGetApis(BNRepoPlugin* p, size_t* count) {

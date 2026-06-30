@@ -489,12 +489,13 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
   if constexpr (!IsBuiltinPlugin()) {
     LOG(INFO) << "Binary Ninja specific post processing";
   }
-  BinaryNinja::Ref<BinaryNinja::Architecture> default_arch =
-      view->GetDefaultArchitecture();
+  BinaryNinja::Ref<BinaryNinja::Platform> default_platform =
+      view->GetDefaultPlatform();
   const bool simplify_templates =
-      default_arch ? BinaryNinja::Settings::Instance()->Get<bool>(
-                         "analysis.types.templateSimplifier", view)
-                   : false;
+      BinaryNinja::Settings::Instance()->Get<bool>(
+          "analysis.types.templateSimplifier", view);
+  BinaryNinja::DemanglerConfig demangler_config = {
+      default_platform, view, simplify_templates};
   for (const auto& [address, function] : flow_graph->GetFunctions()) {
     // Find function name
     BinaryNinja::Ref<BinaryNinja::Symbol> bn_symbol =
@@ -504,13 +505,10 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
     }
 
     std::string full_name = bn_symbol->GetFullName();
-    if (default_arch) {
-      BinaryNinja::Ref<BinaryNinja::Type> demangled_type;
-      BinaryNinja::QualifiedName demangled_name;
-      if (BinaryNinja::DemangleGeneric(
-              default_arch, bn_symbol->GetRawName(), demangled_type,
-              demangled_name, view, simplify_templates)) {
-        full_name = demangled_name.GetString();
+    if (default_platform) {
+      if (auto demangled = BinaryNinja::Demangler::DemangleAny(
+              bn_symbol->GetRawName(), demangler_config)) {
+        full_name = demangled->name.GetString();
       }
     }
 
