@@ -494,8 +494,10 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
   const bool simplify_templates =
       BinaryNinja::Settings::Instance()->Get<bool>(
           "analysis.types.templateSimplifier", view);
-  BinaryNinja::DemanglerConfig demangler_config = {
-      default_platform, view, simplify_templates};
+  BinaryNinja::DemanglerConfig demangler_config;
+  demangler_config.platform = default_platform;
+  demangler_config.view = view;
+  demangler_config.simplifyTemplates = simplify_templates;
   for (const auto& [address, function] : flow_graph->GetFunctions()) {
     // Find function name
     BinaryNinja::Ref<BinaryNinja::Symbol> bn_symbol =
