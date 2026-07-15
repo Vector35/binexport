@@ -8038,6 +8038,10 @@ BINARYNINJACOREAPI bool BNDemangleWithDemangler(
   return {};
 }
 BINARYNINJACOREAPI void BNFreeDemanglerResult(BNDemanglerResult* result) {}
+BINARYNINJACOREAPI bool BNSimplifyDemangledTemplateName(
+    const BNQualifiedName* name, BNQualifiedName* result) {
+  return {};
+}
 BINARYNINJACOREAPI BNDemangler* BNRegisterDemangler(
     const char* name, const BNDemanglerCallbacks* callbacks) {
   return {};
