@@ -37,9 +37,14 @@ elseif(MSVC)  # Visual Studio
     /wd4244  # 'argument' conversion, possible loss of data
     /wd4267  # 'initializing' conversion, possible loss of data
   )
-  # Use the static runtime unless overridden
+  option(BINEXPORT_MSVC_STATIC_RUNTIME "Link the MSVC runtime statically" ON)
+  # Honor an explicitly selected runtime over the BinExport default.
   if(NOT DEFINED CMAKE_MSVC_RUNTIME_LIBRARY)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    if(BINEXPORT_MSVC_STATIC_RUNTIME)
+      set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    else()
+      set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    endif()
   endif()
 else()
   message(FATAL_ERROR "Unsupported compiler")
