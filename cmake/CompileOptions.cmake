@@ -37,8 +37,12 @@ elseif(MSVC)  # Visual Studio
     /wd4244  # 'argument' conversion, possible loss of data
     /wd4267  # 'initializing' conversion, possible loss of data
   )
-  # Use the static runtime
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  option(BINEXPORT_MSVC_STATIC_RUNTIME "Link the MSVC runtime statically" ON)
+  if(BINEXPORT_MSVC_STATIC_RUNTIME)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  else()
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+  endif()
 else()
   message(FATAL_ERROR "Unsupported compiler")
 endif()
