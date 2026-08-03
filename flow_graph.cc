@@ -341,7 +341,7 @@ void FlowGraph::CreateBasicBlocks(Instructions* instructions,
     // Such invalid call targets will be marked as imported functions in the
     // output binexport.
     for (const Address& addr : invalid_functions) {
-      BasicBlock::blocks().erase(addr);
+      BasicBlock::Erase(addr);
     }
     // Removes all edges that go from/to the invalid_functions. This step might
     // be not necessary, but it reduces amount of data which would be processed
@@ -421,7 +421,7 @@ void FlowGraph::MergeBasicBlocks(const CallGraph& call_graph) {
     }
 
     source_basic_block->AppendBlock(*target_basic_block);
-    BasicBlock::blocks().erase(target_basic_block->GetEntryPoint());
+    BasicBlock::Erase(target_basic_block->GetEntryPoint());
     return true;
   };
 

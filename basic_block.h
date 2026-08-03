@@ -23,6 +23,7 @@
 #undef max
 
 #include "third_party/absl/container/btree_map.h"
+#include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/zynamics/binexport/instruction.h"
 #include "third_party/zynamics/binexport/util/nested_iterator.h"
 #include "third_party/zynamics/binexport/util/range.h"
@@ -57,6 +58,7 @@ class BasicBlock {
  private:
   // Important: This must be a sorted container.
   using Cache = absl::btree_map<Address, std::unique_ptr<BasicBlock>>;
+  using ExactCache = absl::flat_hash_map<Address, BasicBlock*>;
 
   // In most cases there is only one InstructionRange per BasicBlock. Exceptions
   // are overlapping instructions and appended BasicBlocks. A linked list is
@@ -75,20 +77,16 @@ class BasicBlock {
 
   // Returns the basic block at entry_point_address.
   static BasicBlock* Find(Address entry_point_address) {
-    const auto pivot(cache_.find(entry_point_address));
-    if (pivot != cache_.end() &&
-        pivot->second->GetEntryPoint() == entry_point_address) {
-      return pivot->second.get();
-    }
-    return nullptr;
+    const auto block = exact_cache_.find(entry_point_address);
+    return block != exact_cache_.end() ? block->second : nullptr;
   }
 
   // Returns the basic block containing address, if any.
   static BasicBlock* FindContaining(Address address) {
-    auto pivot(cache_.lower_bound(address));
-    if (pivot != cache_.end() && pivot->second->GetEntryPoint() == address) {
-      return pivot->second.get();
+    if (BasicBlock* block = Find(address)) {
+      return block;
     }
+    auto pivot(cache_.lower_bound(address));
 
     // We have not found a basic block at address. Next we search for a basic
     // block containing address. We try to do this efficiently. Basic blocks do
@@ -127,7 +125,8 @@ class BasicBlock {
   // at the same entry point.
   static BasicBlock* Create(BasicBlockInstructions* instructions);
 
-  static void DestroyCache() { Cache().swap(cache_); }
+  static void Erase(Address entry_point_address);
+  static void DestroyCache();
 
   static Cache& blocks() { return cache_; }
 
@@ -182,6 +181,7 @@ class BasicBlock {
   RangeConstIterator BeforeEndRange() const;
 
   static thread_local Cache cache_;
+  static thread_local ExactCache exact_cache_;
 
   int id_;  // Careful: This might not stay constant for shared basic blocks.
   InstructionRanges ranges_;
