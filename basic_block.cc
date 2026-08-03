@@ -23,6 +23,7 @@
 using security::binexport::FormatAddress;
 
 thread_local BasicBlock::Cache BasicBlock::cache_;
+thread_local BasicBlock::ExactCache BasicBlock::exact_cache_;
 
 void BasicBlockInstructions::AddInstruction(
     Instructions::iterator instruction) {
@@ -53,8 +54,19 @@ BasicBlock* BasicBlock::Create(BasicBlockInstructions* instructions) {
 
   auto& ptr = entry->second;
   ptr.reset(new BasicBlock(instructions));
+  exact_cache_.emplace(instruction_first->GetAddress(), ptr.get());
   instructions->Clear();
   return ptr.get();
+}
+
+void BasicBlock::Erase(Address entry_point_address) {
+  exact_cache_.erase(entry_point_address);
+  cache_.erase(entry_point_address);
+}
+
+void BasicBlock::DestroyCache() {
+  exact_cache_.clear();
+  Cache().swap(cache_);
 }
 
 void BasicBlock::Render(std::ostream* stream, const CallGraph& call_graph,
