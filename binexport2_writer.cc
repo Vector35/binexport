@@ -32,6 +32,7 @@
 #include <array>    // IWYU pragma: keep
 #include <codecvt>  // IWYU pragma: keep
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <locale>  // IWYU pragma: keep
@@ -787,7 +788,8 @@ void WriteSections(const AddressSpace& address_space, BinExport2* proto) {
 
 // Writes a binary protocol buffer to the specified filename.
 absl::Status WriteProtoToFile(const std::string& filename, BinExport2* proto) {
-  std::ofstream stream(filename, std::ios::binary | std::ios::out);
+  std::ofstream stream(std::filesystem::u8path(filename),
+                       std::ios::binary | std::ios::out);
   if (!stream.is_open() || stream.fail()) {
     return absl::PermissionDeniedError(
         absl::StrCat("Cannot write to file: '", filename, "' - check permissions"));
