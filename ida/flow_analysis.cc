@@ -334,25 +334,9 @@ absl::Status AnalyzeFlowIda(EntryPoints* entry_points, const ModuleMap& modules,
                                    GetPermissions(segment));
     }
 
-    // Check for unreasonably large segments (likely virtual address space, not
-    // actual data). This prevents out-of-memory errors when segments have huge
-    // virtual address ranges but no actual loaded data.
-    constexpr size_t kMaxReasonableSegmentSize = 1024ULL * 1024 * 1024;  // 1 GB
-
-    // For flags, use the actual loaded data size, not the virtual segment size.
-    // This prevents allocating huge amounts of memory for virtual address
-    // spaces.
-    size_t flags_size = section_bytes.empty() ? 0 : section_bytes.size();
-    if (flags_size == 0 && segment_size <= kMaxReasonableSegmentSize) {
-      // If no section bytes but segment size is reasonable, use segment size
-      // (this handles cases where the segment exists but GetSectionBytes
-      // returned empty)
-      flags_size = segment_size;
-    }
-
-    if (flags_size > 0) {
-      flags.AddMemoryBlock(segment->start_ea,
-                           AddressSpace::MemoryBlock(flags_size),
+    // Map the complete segment for flags without allocating a backing block.
+    if (segment_size > 0) {
+      flags.AddMemoryRange(segment->start_ea, segment_size,
                            GetPermissions(segment));
     }
   }

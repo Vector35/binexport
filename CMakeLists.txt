@@ -265,6 +265,14 @@ target_link_libraries(binexport_core PUBLIC
   absl::time
   binexport_shared
 )
+if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
+  add_executable(virtual_memory_test virtual_memory_test.cc)
+  target_link_libraries(virtual_memory_test PUBLIC
+    binexport_core
+    binexport_test_base
+  )
+  gtest_discover_tests(virtual_memory_test)
+endif()
 
 # IDA Pro plugins
 if(BINEXPORT_ENABLE_IDAPRO)
