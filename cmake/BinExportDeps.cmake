@@ -78,8 +78,8 @@ binexport_check_target(absl::core_headers)
 
 # Protocol Buffers
 FetchContent_Declare(protobuf
-  URL https://github.com/protocolbuffers/protobuf/archive/refs/tags/v31.0.tar.gz # 2025-05-14
-  URL_HASH SHA256=2b695cb1eaef8e173f884235ee6d55f57186e95d89ebb31361ee55cb5fd1b996
+  URL https://github.com/protocolbuffers/protobuf/archive/refs/tags/v34.2.tar.gz # 2026-05-19
+  URL_HASH SHA256=c0156673c0977bff3bf7c605dad47b216b05c2e1bf143ca0c72b0e4f382d1f59
   DOWNLOAD_EXTRACT_TIMESTAMP 1
 )
 set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
