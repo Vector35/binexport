@@ -244,7 +244,7 @@ There are quite a few dependencies to satisfy:
 *   Git 1.8 or higher
 *   IDA Pro only: IDA SDK 8.2 or higher (unpack into `third_party/idasdk`)
 *   Dependencies that will be downloaded:
-    *   Abseil, GoogleTest and Protocol Buffers (25.2)
+    *   Abseil, GoogleTest and Protocol Buffers (34.2)
     *   Binary Ninja SDK
 
 ### Linux
