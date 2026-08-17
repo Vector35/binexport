@@ -16,7 +16,7 @@
 #define VIRTUAL_MEMORY_H_
 
 #include <atomic>
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 #include "third_party/absl/container/btree_map.h"
@@ -39,32 +39,38 @@ class AddressSpace {
   // if the block overlaps with existing memory.
   bool AddMemoryBlock(Address address, const MemoryBlock& block, int flags);
 
-  // Returns the memory block containing address.
+  // Maps a range without allocating a contiguous backing block. Bytes in the
+  // range default to zero and are stored sparsely when written through
+  // operator[]. Returns false if the range overlaps with existing memory.
+  bool AddMemoryRange(Address address, MemoryBlock::size_type size, int flags);
+
+  // Returns the byte-backed memory block containing address. Range-only
+  // mappings are not returned.
   Data::const_iterator GetMemoryBlock(Address address) const;
 
   Data::iterator GetMemoryBlock(Address address);
 
-  // Returns true iff address is mapped in this address space, i.e. falls into
-  // one of the memory blocks owned by this class.
+  // Returns true iff address is mapped in this address space.
   bool IsValidAddress(Address address) const;
 
-  // Returns true iff the MemoryBlock at this address is readable.
+  // Returns true iff the mapping at this address is readable.
   bool IsReadable(Address address) const;
 
-  // Returns true iff the MemoryBlock at this address is writable.
+  // Returns true iff the mapping at this address is writable.
   bool IsWritable(Address address) const;
 
-  // Returns true iff the MemoryBlock at this address is executable.
+  // Returns true iff the mapping at this address is executable.
   bool IsExecutable(Address address) const;
 
   // Get flags for a specific address:
   int GetFlags(Address address) const;
 
-  // Size of the entire address space in bytes. Runtime O(number of memory
-  // blocks).
+  // Size of the entire address space in bytes. Runtime O(number of mapped
+  // ranges).
   size_t size() const;
 
-  // Read only address to the map of memory blocks. Sorted by ascending address.
+  // Read-only access to byte-backed memory blocks, sorted by ascending address.
+  // Range-only mappings are not included.
   const Data& data() const { return data_; }
 
   // Access the byte at address. Undefined behavior if address is not mapped in
@@ -81,7 +87,15 @@ class AddressSpace {
                         MemoryBlock::size_type index, T* data) const;
 
  private:
+  using Ranges = absl::btree_map<Address, MemoryBlock::size_type>;
+  using SparseData = std::unordered_map<Address, Byte>;
+
+  bool CanAddMemoryRange(Address address, MemoryBlock::size_type size) const;
+  Ranges::const_iterator GetMemoryRange(Address address) const;
+
   Data data_;
+  Ranges ranges_;
+  SparseData sparse_data_;
   Flags flags_;
 };
 

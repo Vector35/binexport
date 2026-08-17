@@ -50,6 +50,38 @@ TEST(VirtualMemoryTest, AddMemoryBlock) {
       kBaseAddress + 5, AddressSpace::MemoryBlock(20), flags));
 }
 
+TEST(VirtualMemoryTest, AddMemoryRange) {
+  AddressSpace virtual_memory;
+  int flags = AddressSpace::kRead | AddressSpace::kWrite;
+
+  EXPECT_TRUE(virtual_memory.AddMemoryRange(kBaseAddress, 10, flags));
+  EXPECT_EQ(10, virtual_memory.size());
+  EXPECT_TRUE(virtual_memory.data().empty());
+  EXPECT_EQ(virtual_memory.data().end(),
+            virtual_memory.GetMemoryBlock(kBaseAddress));
+
+  EXPECT_FALSE(virtual_memory.IsValidAddress(kBaseAddress - 1));
+  EXPECT_TRUE(virtual_memory.IsValidAddress(kBaseAddress));
+  EXPECT_TRUE(virtual_memory.IsValidAddress(kBaseAddress + 9));
+  EXPECT_FALSE(virtual_memory.IsValidAddress(kBaseAddress + 10));
+  EXPECT_TRUE(virtual_memory.IsReadable(kBaseAddress + 5));
+  EXPECT_TRUE(virtual_memory.IsWritable(kBaseAddress + 5));
+  EXPECT_FALSE(virtual_memory.IsExecutable(kBaseAddress + 5));
+
+  const AddressSpace& const_virtual_memory = virtual_memory;
+  EXPECT_EQ(0, const_virtual_memory[kBaseAddress + 5]);
+  virtual_memory[kBaseAddress + 5] = 0x80;
+  EXPECT_EQ(0x80, const_virtual_memory[kBaseAddress + 5]);
+  EXPECT_EQ(0, const_virtual_memory[kBaseAddress + 6]);
+
+  EXPECT_FALSE(virtual_memory.AddMemoryRange(kBaseAddress + 9, 10, flags));
+  EXPECT_FALSE(virtual_memory.AddMemoryBlock(
+      kBaseAddress + 9, AddressSpace::MemoryBlock(10), flags));
+  EXPECT_TRUE(virtual_memory.AddMemoryBlock(
+      kBaseAddress + 10, AddressSpace::MemoryBlock(10), flags));
+  EXPECT_EQ(20, virtual_memory.size());
+}
+
 TEST(VirtualMemoryTest, PagesAreOrdered) {
   AddressSpace virtual_memory;
   int flags = AddressSpace::kRead;

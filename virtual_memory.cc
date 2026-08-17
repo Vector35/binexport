@@ -14,23 +14,59 @@
 
 #include "third_party/zynamics/binexport/virtual_memory.h"
 
+#include <cassert>
+
 bool AddressSpace::AddMemoryBlock(Address address, const MemoryBlock& block,
                                   int flags) {
-  auto it = data_.upper_bound(address);
-  if (it != data_.end() && it->first < address + block.size()) {
-    // Intersecting the next block.
+  if (!CanAddMemoryRange(address, block.size())) {
     return false;
   }
-  if (it != data_.begin()) {
+
+  if (!data_.emplace(address, block).second) {
+    return false;
+  }
+  ranges_.emplace(address, block.size());
+  flags_.emplace(address, flags);
+  return true;
+}
+
+bool AddressSpace::AddMemoryRange(Address address, MemoryBlock::size_type size,
+                                  int flags) {
+  if (!CanAddMemoryRange(address, size)) {
+    return false;
+  }
+
+  ranges_.emplace(address, size);
+  flags_.emplace(address, flags);
+  return true;
+}
+
+bool AddressSpace::CanAddMemoryRange(Address address,
+                                     MemoryBlock::size_type size) const {
+  auto it = ranges_.lower_bound(address);
+  if (it != ranges_.end() &&
+      (it->first == address || it->first - address < size)) {
+    return false;
+  }
+  if (it != ranges_.begin()) {
     --it;
-    if (it->first + it->second.size() > address) {
-      // Intersecting the preceding block.
+    if (address - it->first < it->second) {
       return false;
     }
   }
+  return true;
+}
 
-  return data_.emplace(address, block).second &&
-         flags_.emplace(address, flags).second;
+AddressSpace::Ranges::const_iterator AddressSpace::GetMemoryRange(
+    Address address) const {
+  auto it = ranges_.upper_bound(address);
+  if (it != ranges_.begin()) {
+    --it;
+    if (address - it->first < it->second) {
+      return it;
+    }
+  }
+  return ranges_.end();
 }
 
 AddressSpace::Data::const_iterator AddressSpace::GetMemoryBlock(
@@ -38,7 +74,7 @@ AddressSpace::Data::const_iterator AddressSpace::GetMemoryBlock(
   auto it = data_.upper_bound(address);
   if (it != data_.begin()) {
     --it;
-    if (it->first <= address && it->first + it->second.size() > address) {
+    if (address - it->first < it->second.size()) {
       return it;
     }
   }
@@ -49,7 +85,7 @@ AddressSpace::Data::iterator AddressSpace::GetMemoryBlock(Address address) {
   auto it = data_.upper_bound(address);
   if (it != data_.begin()) {
     --it;
-    if (it->first <= address && it->first + it->second.size() > address) {
+    if (address - it->first < it->second.size()) {
       return it;
     }
   }
@@ -57,19 +93,32 @@ AddressSpace::Data::iterator AddressSpace::GetMemoryBlock(Address address) {
 }
 
 const Byte& AddressSpace::operator[](Address address) const {
-  auto it = data_.upper_bound(address);
-  --it;
-  return it->second[address - it->first];
+  const auto memory_block = GetMemoryBlock(address);
+  if (memory_block != data_.end()) {
+    return memory_block->second[address - memory_block->first];
+  }
+
+  assert(IsValidAddress(address));
+  const auto sparse_byte = sparse_data_.find(address);
+  if (sparse_byte != sparse_data_.end()) {
+    return sparse_byte->second;
+  }
+  static constexpr Byte kZero = 0;
+  return kZero;
 }
 
 Byte& AddressSpace::operator[](Address address) {
-  auto it = data_.upper_bound(address);
-  --it;
-  return it->second[address - it->first];
+  const auto memory_block = GetMemoryBlock(address);
+  if (memory_block != data_.end()) {
+    return memory_block->second[address - memory_block->first];
+  }
+
+  assert(IsValidAddress(address));
+  return sparse_data_[address];
 }
 
 bool AddressSpace::IsValidAddress(Address address) const {
-  return GetMemoryBlock(address) != data_.end();
+  return GetMemoryRange(address) != ranges_.end();
 }
 
 bool AddressSpace::IsReadable(Address address) const {
@@ -85,8 +134,8 @@ bool AddressSpace::IsExecutable(Address address) const {
 }
 
 int AddressSpace::GetFlags(Address address) const {
-  auto memory_it = GetMemoryBlock(address);
-  if (memory_it == data_.end()) {
+  const auto memory_it = GetMemoryRange(address);
+  if (memory_it == ranges_.end()) {
     return 0;
   }
   auto flags_it = flags_.find(memory_it->first);
@@ -100,8 +149,8 @@ int AddressSpace::GetFlags(Address address) const {
 //     cache the size value in the class?
 size_t AddressSpace::size() const {
   size_t value = 0;
-  for (const auto& block : data_) {
-    value += block.second.size();
+  for (const auto& range : ranges_) {
+    value += range.second;
   }
   return value;
 }

@@ -389,9 +389,7 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
     address_space.AddMemoryBlock(
         segment_start, GetSegmentBytes(view, segment_start, segment_length),
         segment_permissions);
-    flags.AddMemoryBlock(segment_start,
-                         AddressSpace::MemoryBlock(segment_length),
-                         segment_permissions);
+    flags.AddMemoryRange(segment_start, segment_length, segment_permissions);
   }
 
   Instruction::SetBitness(GetArchitectureBitness(view));
