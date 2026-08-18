@@ -95,7 +95,10 @@ if(MSVC)
     set(protobuf_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
   endif()
 endif()
+# protobuf sets policy CMP0141 to OLD, which newer CMake reports as deprecated.
+set(CMAKE_WARN_DEPRECATED OFF)
 FetchContent_MakeAvailable(protobuf)
+unset(CMAKE_WARN_DEPRECATED)
 binexport_check_target(protobuf::libprotobuf)
 binexport_check_target(protobuf::protoc)
 target_include_directories(utf8_validity PUBLIC
@@ -107,7 +110,7 @@ target_include_directories(libprotobuf PUBLIC
 )
 set(Protobuf_INCLUDE_DIR "${protobuf_SOURCE_DIR}/src" CACHE INTERNAL "")
 set(Protobuf_LIBRARIES protobuf::libprotobuf CACHE INTERNAL "")
-find_package(Protobuf 3.14 REQUIRED) # Make protobuf_generate_cpp available
+include("${protobuf_SOURCE_DIR}/cmake/protobuf-generate.cmake")
 
 # Binary Ninja API
 if(BINEXPORT_ENABLE_BINARYNINJA)

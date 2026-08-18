@@ -103,12 +103,16 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
 endif()
 
 # BinExport format version 2 proto library
-protobuf_generate_cpp(binexport2_proto binexport2_proto_h binexport2.proto)
+protobuf_generate(
+  PROTOS binexport2.proto
+  LANGUAGE cpp
+  APPEND_PATH
+  OUT_VAR binexport2_proto_srcs
+)
 
 # Utility library code shared with BinDiff
 add_library(binexport_shared STATIC
-  "${binexport2_proto_h}"
-  "${binexport2_proto}"
+  ${binexport2_proto_srcs}
   architectures.h
   binexport.cc
   binexport.h
