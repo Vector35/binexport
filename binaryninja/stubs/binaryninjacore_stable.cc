@@ -1765,6 +1765,10 @@ BINARYNINJACOREAPI bool BNGetInstructionLowLevelIL(BNArchitecture* arch,
                                                    BNLowLevelILFunction* il) {
   return {};
 }
+BINARYNINJACOREAPI bool BNArchitectureSupportsStandaloneInstructionDecoding(
+    BNArchitecture* arch) {
+  return true;
+}
 BINARYNINJACOREAPI void BNFreeInstructionText(BNInstructionTextToken* tokens,
                                               size_t count) {}
 BINARYNINJACOREAPI void BNFreeInstructionTextLines(BNInstructionTextLine* lines,
