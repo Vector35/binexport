@@ -48,10 +48,9 @@ create_directory_symlink(
   "${binaryninja_SOURCE_DIR}/binaryninja/stubs"
   "${BINEXPORT_BINARY_DIR}/src_include/third_party/binaryninja_api"
 )
-create_directory_symlink(
-  "${BINEXPORT_BINARY_DIR}"
-  "${BINEXPORT_BINARY_DIR}/gen_include/third_party/zynamics/binexport"
-)
+set(BINEXPORT_GEN_INCLUDE_DIR
+    "${BINEXPORT_BINARY_DIR}/gen_include/third_party/zynamics/binexport")
+file(MAKE_DIRECTORY "${BINEXPORT_GEN_INCLUDE_DIR}")
 
 # Find the Git revision number, if applicable
 # TODO(cblichmann): Move this to Util.cmake
@@ -107,6 +106,7 @@ protobuf_generate(
   PROTOS binexport2.proto
   LANGUAGE cpp
   APPEND_PATH
+  PROTOC_OUT_DIR "${BINEXPORT_GEN_INCLUDE_DIR}"
   OUT_VAR binexport2_proto_srcs
 )
 
